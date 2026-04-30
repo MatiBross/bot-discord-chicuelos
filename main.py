@@ -153,6 +153,9 @@ async def limpiar_lista(ctx):
 # --- COMANDO DE PELÍCULAS (TMDB) ---
 @bot.hybrid_command(name='peli', description='Busca información de una película.')
 async def buscar_peli(ctx, *, nombre: str):
+    # Esto le da al bot 15 minutos de tiempo extra
+    await ctx.defer()
+
     url = f"https://api.themoviedb.org/3/search/movie?api_key={TMDB_API_KEY}&query={nombre}&language=es-ES"
     response = requests.get(url).json()
 
@@ -179,6 +182,9 @@ async def buscar_peli(ctx, *, nombre: str):
 # --- COMANDO DE SERIES (TMDB) ---
 @bot.hybrid_command(name='serie', description='Busca información de una serie de TV.')
 async def buscar_serie(ctx, *, nombre: str):
+    # Esto le da al bot 15 minutos de tiempo extra
+    await ctx.defer()
+
     # El endpoint cambia a /search/tv
     url = f"https://api.themoviedb.org/3/search/tv?api_key={TMDB_API_KEY}&query={nombre}&language=es-ES"
     response = requests.get(url).json()
@@ -207,6 +213,9 @@ async def buscar_serie(ctx, *, nombre: str):
 # --- COMANDO DE JUEGOS (RAWG) ---
 @bot.hybrid_command(name='juego', description='Busca información de un videojuego.')
 async def buscar_juego(ctx, *, nombre: str):
+    # Esto le da al bot 15 minutos de tiempo extra
+    await ctx.defer()
+
     url = f"https://api.rawg.io/api/games?key={RAWG_API_KEY}&search={nombre}"
     response = requests.get(url).json()
 
@@ -236,6 +245,9 @@ async def buscar_juego(ctx, *, nombre: str):
 # --- COMANDO DE LIBROS (Open Library) ---
 @bot.hybrid_command(name='libro', description='Busca un libro en Open Library.')
 async def buscar_libro(ctx, *, nombre: str):
+    # Esto le da al bot 15 minutos de tiempo extra
+    await ctx.defer()
+
     # Reemplazamos los espacios por + para la URL
     query = nombre.replace(" ", "+")
     url = f"https://openlibrary.org/search.json?q={query}"
@@ -265,6 +277,7 @@ async def buscar_libro(ctx, *, nombre: str):
     
     embed.set_footer(text="Datos de Open Library")
     await ctx.send(embed=embed)
+    
 
 
 TOKEN = os.environ.get('DISCORD_TOKEN') 
