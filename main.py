@@ -32,6 +32,7 @@ async def on_voice_state_update(member, before, after):
         return
     
     channel = bot.get_channel(ID_CANAL)
+    canal_publico = bot.get_cannel(1499208975307112548)
 
     if after.channel is not None:
 
@@ -39,6 +40,8 @@ async def on_voice_state_update(member, before, after):
             await channel.send(f"Se acabó la tranquilidad, {member.mention} ha llegado al canal de voz.")
         elif after.channel.name == "Musiquita":
             await channel.send(f"{member.mention} está aquí. Si pone Lali, lo baneamos.")
+        elif after.channel.name == "Canal-publico":
+            await channel.send(f"{member.mention} se unió al canal público")
 
 
 # ________RULETA DE JUEGOS__________
