@@ -3,6 +3,11 @@ from discord.ext import commands
 import os
 import sqlite3
 import random
+import requests
+
+# --- CONFIGURACIÓN DE APIS ---
+TMDB_API_KEY = os.environ.get('TMDB_API_KEY') 
+RAWG_API_KEY = os.environ.get('RAWG_API_KEY')
 
 # Configuración de Intents
 intents = discord.Intents.default()
@@ -145,6 +150,119 @@ async def limpiar_lista(ctx):
     conn.close()
     await ctx.send('🧹 La lista ha sido limpiada. Ahora está vacía.')
 
+# --- COMANDO DE PELÍCULAS (TMDB) ---
+@bot.hybrid_command(name='peli', description='Busca información de una película.')
+async def buscar_peli(ctx, *, nombre: str):
+    url = f"https://api.themoviedb.org/3/search/movie?api_key={TMDB_API_KEY}&query={nombre}&language=es-ES"
+    response = requests.get(url).json()
+
+    if not response['results']:
+        return await ctx.send(f"No encontré ninguna película que se llame '{nombre}'.")
+
+    movie = response['results'][0]
+    titulo = movie['title']
+    original = movie['original_title']
+    sinopsis = movie['overview'] or "Sin descripción disponible."
+    poster = f"https://image.tmdb.org/t/p/w500{movie['poster_path']}"
+    rating = movie['vote_average']
+    fecha = movie['release_date']
+
+    embed = discord.Embed(title=titulo, description=sinopsis, color=discord.Color.red())
+    embed.set_image(url=poster)
+    embed.add_field(name="🎬 Título original", value=original, inline=True)
+    embed.add_field(name="⭐ Calificación", value=rating, inline=True)
+    embed.add_field(name="📅 Lanzamiento", value=fecha, inline=True)
+    embed.set_footer(text="Información provista por TMDB")
+
+    await ctx.send(embed=embed)
+
+# --- COMANDO DE SERIES (TMDB) ---
+@bot.hybrid_command(name='serie', description='Busca información de una serie de TV.')
+async def buscar_serie(ctx, *, nombre: str):
+    # El endpoint cambia a /search/tv
+    url = f"https://api.themoviedb.org/3/search/tv?api_key={TMDB_API_KEY}&query={nombre}&language=es-ES"
+    response = requests.get(url).json()
+
+    if not response['results']:
+        return await ctx.send(f"No encontré ninguna serie que se llame '{nombre}'.")
+
+    serie = response['results'][0]
+    titulo = serie['name']
+    original = serie['original_name']
+    sinopsis = serie['overview'] or "Sin descripción disponible."
+    poster = f"https://image.tmdb.org/t/p/w500{serie['poster_path']}"
+    rating = serie['vote_average']
+    estreno = serie['first_air_date']
+
+    embed = discord.Embed(title=titulo, description=sinopsis, color=discord.Color.dark_magenta())
+    if serie['poster_path']:
+        embed.set_image(url=poster)
+    embed.add_field(name="🎬 Título original", value=original, inline=True)
+    embed.add_field(name="⭐ Rating", value=rating, inline=True)
+    embed.add_field(name="📅 Primera emisión", value=estreno, inline=True)
+    embed.set_footer(text="Información de TMDB")
+
+    await ctx.send(embed=embed)
+
+# --- COMANDO DE JUEGOS (RAWG) ---
+@bot.hybrid_command(name='juego', description='Busca información de un videojuego.')
+async def buscar_juego(ctx, *, nombre: str):
+    url = f"https://api.rawg.io/api/games?key={RAWG_API_KEY}&search={nombre}"
+    response = requests.get(url).json()
+
+    if not response['results']:
+        return await ctx.send(f"No encontré el juego '{nombre}'.")
+
+    game = response['results'][0]
+    nombre_juego = game['name']
+    fecha_lanzamiento = game.get('released', 'N/A')
+    imagen = game.get('background_image')
+    rating = game.get('metacritic', 'N/A')
+    
+    # RAWG no da una descripción larga en el endpoint de búsqueda, 
+    # pero podemos mostrar las plataformas
+    plataformas = ", ".join([p['platform']['name'] for p in game['platforms']])
+
+    embed = discord.Embed(title=nombre_juego, color=discord.Color.green())
+    if imagen:
+        embed.set_image(url=imagen)
+    embed.add_field(name="📅 Lanzamiento", value=fecha_lanzamiento, inline=True)
+    embed.add_field(name="🎮 Plataformas", value=plataformas, inline=False)
+    embed.add_field(name="📈 Metacritic", value=rating, inline=True)
+    embed.set_footer(text="Información provista por RAWG.io")
+
+    await ctx.send(embed=embed)
+
+# --- COMANDO DE LIBROS (Google Books) ---
+@bot.hybrid_command(name='libro', description='Busca información de un libro.')
+async def buscar_libro(ctx, *, nombre: str):
+    url = f"https://www.googleapis.com/books/v1/volumes?q={nombre}"
+    response = requests.get(url).json()
+
+    if 'items' not in response:
+        return await ctx.send(f"No encontré el libro '{nombre}'.")
+
+    # Tomamos el primer resultado
+    book_info = response['items'][0]['volumeInfo']
+    titulo = book_info.get('title', 'Título no disponible')
+    autores = ", ".join(book_info.get('authors', ['Autor desconocido']))
+    descripcion = book_info.get('description', 'Sin descripción.')
+    # Cortamos la descripción si es muy larga para que no rompa el Embed
+    descripcion = (descripcion[:300] + '...') if len(descripcion) > 300 else descripcion
+    
+    # Conseguimos la portada
+    portada = book_info.get('imageLinks', {}).get('thumbnail')
+
+    embed = discord.Embed(title=titulo, description=descripcion, color=discord.Color.orange())
+    if portada:
+        # Google devuelve links http, Discord prefiere https
+        embed.set_thumbnail(url=portada.replace("http://", "https://"))
+    
+    embed.add_field(name="✍️ Autor/es", value=autores, inline=True)
+    embed.add_field(name="📖 Páginas", value=book_info.get('pageCount', 'N/A'), inline=True)
+    embed.set_footer(text="Información de Google Books")
+
+    await ctx.send(embed=embed)
 
 
 TOKEN = os.environ.get('DISCORD_TOKEN') 
