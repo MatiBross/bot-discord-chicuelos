@@ -41,7 +41,7 @@ async def on_voice_state_update(member, before, after):
         elif after.channel.name == "Musiquita":
             await channel.send(f"{member.mention} está aquí. Si pone Lali, lo baneamos.")
         elif after.channel.name == "Canal-publico":
-            await channel.send(f"{member.mention} se unió al canal público")
+            await canal_publico.send(f"{member.mention} se unió al canal público")
 
 
 # ________RULETA DE JUEGOS__________
