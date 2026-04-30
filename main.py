@@ -32,7 +32,7 @@ async def on_voice_state_update(member, before, after):
         return
     
     channel = bot.get_channel(ID_CANAL)
-    canal_publico = bot.get_cannel(1499208975307112548)
+    canal_publico = bot.get_channel(1499208975307112548)
 
     if after.channel is not None:
 
