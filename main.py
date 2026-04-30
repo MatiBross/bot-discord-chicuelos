@@ -233,35 +233,37 @@ async def buscar_juego(ctx, *, nombre: str):
 
     await ctx.send(embed=embed)
 
-# --- COMANDO DE LIBROS (Google Books) ---
-@bot.hybrid_command(name='libro', description='Busca información de un libro.')
+# --- COMANDO DE LIBROS (Open Library) ---
+@bot.hybrid_command(name='libro', description='Busca un libro en Open Library.')
 async def buscar_libro(ctx, *, nombre: str):
-    url = f"https://www.googleapis.com/books/v1/volumes?q={nombre}"
+    # Reemplazamos los espacios por + para la URL
+    query = nombre.replace(" ", "+")
+    url = f"https://openlibrary.org/search.json?q={query}"
+    
     response = requests.get(url).json()
 
-    if 'items' not in response:
-        return await ctx.send(f"No encontré el libro '{nombre}'.")
+    if not response.get('docs'):
+        return await ctx.send(f"No encontré nada sobre '{nombre}'.")
 
-    # Tomamos el primer resultado
-    book_info = response['items'][0]['volumeInfo']
-    titulo = book_info.get('title', 'Título no disponible')
-    autores = ", ".join(book_info.get('authors', ['Autor desconocido']))
-    descripcion = book_info.get('description', 'Sin descripción.')
-    # Cortamos la descripción si es muy larga para que no rompa el Embed
-    descripcion = (descripcion[:300] + '...') if len(descripcion) > 300 else descripcion
+    # Tomamos el primer resultado del array 'docs'
+    book = response['docs'][0]
+    titulo = book.get('title', 'Sin título')
+    # Los autores vienen en una lista
+    autores = ", ".join(book.get('author_name', ['Autor desconocido']))
     
-    # Conseguimos la portada
-    portada = book_info.get('imageLinks', {}).get('thumbnail')
+    # Open Library usa IDs para las portadas (ej: ISBN o ID de la base de datos)
+    cover_id = book.get('cover_i')
+    foto_url = f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg" if cover_id else None
 
-    embed = discord.Embed(title=titulo, description=descripcion, color=discord.Color.orange())
-    if portada:
-        # Google devuelve links http, Discord prefiere https
-        embed.set_thumbnail(url=portada.replace("http://", "https://"))
+    embed = discord.Embed(title=titulo, color=discord.Color.gold())
+    if foto_url:
+        embed.set_thumbnail(url=foto_url)
     
-    embed.add_field(name="✍️ Autor/es", value=autores, inline=True)
-    embed.add_field(name="📖 Páginas", value=book_info.get('pageCount', 'N/A'), inline=True)
-    embed.set_footer(text="Información de Google Books")
-
+    embed.add_field(name="✍️ Autor", value=autores, inline=True)
+    # Algunos libros tienen el año de la primera publicación
+    embed.add_field(name="📅 Primera edición", value=book.get('first_publish_year', 'N/A'), inline=True)
+    
+    embed.set_footer(text="Datos de Open Library")
     await ctx.send(embed=embed)
 
 
